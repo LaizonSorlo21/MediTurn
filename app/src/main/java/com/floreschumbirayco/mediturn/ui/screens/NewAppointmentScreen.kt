@@ -18,19 +18,23 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimePicker
 import androidx.compose.material3.TimePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.floreschumbirayco.mediturn.data.repository.AppointmentRepository
+import com.floreschumbirayco.mediturn.data.repository.DoctorRepository
+import com.floreschumbirayco.mediturn.navigation.Routes
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
-fun NewAppointmentScreen(navController: NavController) {
+fun NewAppointmentScreen(navController: NavController, doctorId: String? = null, slotId: String? = null) {
     val dni = remember { mutableStateOf("") }
     val name = remember { mutableStateOf("") }
     val specialty = remember { mutableStateOf("") }
@@ -41,6 +45,23 @@ fun NewAppointmentScreen(navController: NavController) {
     val showTimePicker = remember { mutableStateOf(false) }
     val timeState = remember { TimePickerState(9, 0, false) }
     val reason = remember { mutableStateOf("") }
+    val docRepo = remember { DoctorRepository() }
+    val apptRepo = remember { AppointmentRepository() }
+
+    LaunchedEffect(doctorId, slotId) {
+        doctorId?.let {
+            val d = docRepo.getDoctorById(it)
+            doctor.value = d?.name ?: ""
+            specialty.value = d?.specialty ?: ""
+            if (slotId != null) {
+                val s = docRepo.getSlotsForDoctor(it).find { s -> s.id == slotId }
+                if (s != null) {
+                    date.value = s.date
+                    time.value = s.time
+                }
+            }
+        }
+    }
     Column(
         modifier = Modifier.fillMaxSize().padding(16.dp),
         verticalArrangement = Arrangement.Top,
@@ -66,7 +87,16 @@ fun NewAppointmentScreen(navController: NavController) {
         Spacer(Modifier.height(8.dp))
         OutlinedTextField(reason.value, { reason.value = it }, placeholder = { Text("Motivo") }, modifier = Modifier.fillMaxWidth())
         Spacer(Modifier.height(16.dp))
-        Button(onClick = { /* save */ }, modifier = Modifier.fillMaxWidth()) { Text("Agendar") }
+        Button(onClick = {
+            val selectedDoctorId = doctorId ?: docRepo.searchDoctors(doctor.value).firstOrNull()?.id ?: "1"
+            val appt = apptRepo.bookAppointment(
+                patientId = "patient-1",
+                doctorId = selectedDoctorId,
+                reason = reason.value,
+                slotId = slotId
+            )
+            navController.navigate(Routes.APPOINTMENTS)
+        }, modifier = Modifier.fillMaxWidth()) { Text("Agendar") }
     }
 
     if (showDatePicker.value) {

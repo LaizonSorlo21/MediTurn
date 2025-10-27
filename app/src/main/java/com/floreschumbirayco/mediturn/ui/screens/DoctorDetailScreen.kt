@@ -13,14 +13,20 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.floreschumbirayco.mediturn.data.repository.DoctorRepository
+import com.floreschumbirayco.mediturn.navigation.Routes
 
 @Composable
-fun DoctorDetailScreen(navController: NavController) {
+fun DoctorDetailScreen(navController: NavController, doctorId: String) {
+    val repo = remember { DoctorRepository() }
+    val doctor = repo.getDoctorById(doctorId)
+    val slots = repo.getSlotsForDoctor(doctorId)
     Column(
         modifier = Modifier.fillMaxSize().padding(16.dp),
         verticalArrangement = Arrangement.Top,
@@ -32,12 +38,22 @@ fun DoctorDetailScreen(navController: NavController) {
             Column(modifier = Modifier.padding(16.dp)) {
                 // Replace with real image asset later
                 // Image(painter = painterResource(id = R.drawable.doctor_placeholder), contentDescription = null)
-                Text("Nombre completo")
-                Text("Especialidad")
-                Text("Horarios disponibles: 9:00 - 17:00")
+                Text(doctor?.name ?: "")
+                Text(doctor?.specialty ?: "")
+                Spacer(Modifier.height(8.dp))
+                Text("Horarios disponibles")
+                slots.forEach { s ->
+                    Spacer(Modifier.height(4.dp))
+                    Button(onClick = {
+                        navController.navigate("${Routes.NEW_APPOINTMENT}?doctorId=${doctorId}&slotId=${s.id}")
+                    }, modifier = Modifier.fillMaxWidth()) {
+                        Text("${s.date} - ${s.time}")
+                    }
+                }
                 Spacer(Modifier.height(12.dp))
-                Button(onClick = { /* teleconsulta */ }) { Text("Teleconsulta") }
+                Button(onClick = { navController.navigate("${Routes.NEW_APPOINTMENT}?doctorId=${doctorId}") }) { Text("Agendar sin horario específico") }
             }
         }
     }
 }
+
