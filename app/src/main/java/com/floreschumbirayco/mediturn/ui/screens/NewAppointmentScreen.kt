@@ -17,6 +17,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimePicker
 import androidx.compose.material3.TimePickerState
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
@@ -45,6 +47,10 @@ fun NewAppointmentScreen(navController: NavController, doctorId: String? = null,
     val showTimePicker = remember { mutableStateOf(false) }
     val timeState = remember { TimePickerState(9, 0, false) }
     val reason = remember { mutableStateOf("") }
+    val nameError = remember { mutableStateOf(false) }
+    val doctorError = remember { mutableStateOf(false) }
+    val dateError = remember { mutableStateOf(false) }
+    val timeError = remember { mutableStateOf(false) }
     val docRepo = remember { DoctorRepository() }
     val apptRepo = remember { AppointmentRepository() }
 
@@ -62,41 +68,68 @@ fun NewAppointmentScreen(navController: NavController, doctorId: String? = null,
             }
         }
     }
-    Column(
-        modifier = Modifier.fillMaxSize().padding(16.dp),
-        verticalArrangement = Arrangement.Top,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text("Nueva Cita", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.fillMaxWidth())
-        Spacer(Modifier.height(12.dp))
+    Scaffold(topBar = { TopAppBar(title = { Text("Nueva Cita") }) }) { innerPadding ->
+        Column(
+            modifier = Modifier.fillMaxSize().padding(innerPadding).padding(16.dp),
+            verticalArrangement = Arrangement.Top,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
         OutlinedTextField(dni.value, { dni.value = it }, placeholder = { Text("Documento de identidad") }, modifier = Modifier.fillMaxWidth())
         Spacer(Modifier.height(8.dp))
-        OutlinedTextField(name.value, { name.value = it }, placeholder = { Text("Nombre*") }, modifier = Modifier.fillMaxWidth())
+        OutlinedTextField(name.value, {
+            name.value = it
+            nameError.value = it.isBlank()
+        }, isError = nameError.value, placeholder = { Text("Nombre*") }, supportingText = {
+            if (nameError.value) Text("El nombre es obligatorio", style = MaterialTheme.typography.bodySmall)
+        }, modifier = Modifier.fillMaxWidth())
         Spacer(Modifier.height(8.dp))
         OutlinedTextField(specialty.value, { specialty.value = it }, placeholder = { Text("Especialidad") }, modifier = Modifier.fillMaxWidth())
         Spacer(Modifier.height(8.dp))
-        OutlinedTextField(doctor.value, { doctor.value = it }, placeholder = { Text("Médico disponible") }, modifier = Modifier.fillMaxWidth())
+        OutlinedTextField(doctor.value, {
+            doctor.value = it
+            doctorError.value = it.isBlank()
+        }, isError = doctorError.value, placeholder = { Text("Médico disponible*") }, supportingText = {
+            if (doctorError.value) Text("Selecciona o escribe un médico", style = MaterialTheme.typography.bodySmall)
+        }, modifier = Modifier.fillMaxWidth())
         Spacer(Modifier.height(8.dp))
-        OutlinedTextField(date.value, { }, placeholder = { Text("Fecha") }, modifier = Modifier.fillMaxWidth(), readOnly = true)
+        OutlinedTextField(date.value, { }, isError = dateError.value, placeholder = { Text("Fecha${if (slotId == null) "*" else ""}") }, supportingText = {
+            if (dateError.value) Text("La fecha es obligatoria", style = MaterialTheme.typography.bodySmall)
+        }, modifier = Modifier.fillMaxWidth(), readOnly = true)
         Spacer(Modifier.height(6.dp))
-        Button(onClick = { showDatePicker.value = true }, modifier = Modifier.fillMaxWidth()) { Text("Seleccionar Fecha") }
+        Button(onClick = { showDatePicker.value = true }, enabled = slotId == null, modifier = Modifier.fillMaxWidth()) { Text("Seleccionar Fecha") }
         Spacer(Modifier.height(8.dp))
-        OutlinedTextField(time.value, { }, placeholder = { Text("Hora") }, modifier = Modifier.fillMaxWidth(), readOnly = true)
+        OutlinedTextField(time.value, { }, isError = timeError.value, placeholder = { Text("Hora${if (slotId == null) "*" else ""}") }, supportingText = {
+            if (timeError.value) Text("La hora es obligatoria", style = MaterialTheme.typography.bodySmall)
+        }, modifier = Modifier.fillMaxWidth(), readOnly = true)
         Spacer(Modifier.height(6.dp))
-        Button(onClick = { showTimePicker.value = true }, modifier = Modifier.fillMaxWidth()) { Text("Seleccionar Hora") }
+        Button(onClick = { showTimePicker.value = true }, enabled = slotId == null, modifier = Modifier.fillMaxWidth()) { Text("Seleccionar Hora") }
         Spacer(Modifier.height(8.dp))
         OutlinedTextField(reason.value, { reason.value = it }, placeholder = { Text("Motivo") }, modifier = Modifier.fillMaxWidth())
         Spacer(Modifier.height(16.dp))
         Button(onClick = {
+            nameError.value = name.value.isBlank()
+            doctorError.value = doctor.value.isBlank()
+            if (slotId == null) {
+                dateError.value = date.value.isBlank()
+                timeError.value = time.value.isBlank()
+            } else {
+                dateError.value = false
+                timeError.value = false
+            }
+            val valid = !nameError.value && !doctorError.value && !dateError.value && !timeError.value
+            if (!valid) return@Button
             val selectedDoctorId = doctorId ?: docRepo.searchDoctors(doctor.value).firstOrNull()?.id ?: "1"
-            val appt = apptRepo.bookAppointment(
+            apptRepo.bookAppointment(
                 patientId = "patient-1",
                 doctorId = selectedDoctorId,
                 reason = reason.value,
-                slotId = slotId
+                slotId = slotId,
+                date = if (slotId == null) date.value else null,
+                time = if (slotId == null) time.value else null
             )
             navController.navigate(Routes.APPOINTMENTS)
         }, modifier = Modifier.fillMaxWidth()) { Text("Agendar") }
+        }
     }
 
     if (showDatePicker.value) {
@@ -109,6 +142,7 @@ fun NewAppointmentScreen(navController: NavController, doctorId: String? = null,
                     if (millis != null) {
                         val fmt = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
                         date.value = fmt.format(Date(millis))
+                        dateError.value = false
                     }
                     showDatePicker.value = false
                 }) { Text("OK") }
@@ -127,6 +161,7 @@ fun NewAppointmentScreen(navController: NavController, doctorId: String? = null,
                     val hh = timeState.hour.toString().padStart(2, '0')
                     val mm = timeState.minute.toString().padStart(2, '0')
                     time.value = "$hh:$mm"
+                    timeError.value = false
                     showTimePicker.value = false
                 }) { Text("OK") }
             },

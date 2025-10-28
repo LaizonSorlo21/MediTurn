@@ -11,6 +11,13 @@ class AppointmentRepository {
         patientId: String,
         doctorId: String,
         reason: String,
-        slotId: String?
-    ): Appointment = DataSource.bookAppointment(patientId, doctorId, reason, slotId)
+        slotId: String?,
+        date: String?,
+        time: String?
+    ): Appointment = DataSource.bookAppointment(patientId, doctorId, reason, slotId, date, time)
+
+    fun cancelAppointment(appointmentId: String): Boolean = DataSource.cancelAppointment(appointmentId)
+
+    fun rescheduleAppointment(appointmentId: String, newSlotId: String): Appointment? =
+        DataSource.rescheduleAppointment(appointmentId, newSlotId)
 }

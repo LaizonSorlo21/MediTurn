@@ -12,4 +12,7 @@ class DoctorRepository {
     fun getDoctorById(id: String): Doctor? = DataSource.getDoctorById(id)
 
     fun getSlotsForDoctor(doctorId: String): List<Slot> = DataSource.getSlotsForDoctor(doctorId)
+
+    fun filterDoctors(specialty: String?, city: String?, telemedicine: Boolean?): List<Doctor> =
+        DataSource.filterDoctors(specialty, city, telemedicine)
 }
