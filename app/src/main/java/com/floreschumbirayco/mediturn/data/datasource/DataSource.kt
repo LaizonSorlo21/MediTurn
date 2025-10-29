@@ -3,6 +3,7 @@ package com.floreschumbirayco.mediturn.data.datasource
 import com.floreschumbirayco.mediturn.model.Appointment
 import com.floreschumbirayco.mediturn.model.Doctor
 import com.floreschumbirayco.mediturn.model.Slot
+import java.text.Normalizer
 import java.util.UUID
 
 object DataSource {
@@ -24,17 +25,28 @@ object DataSource {
     fun listDoctors(): List<Doctor> = doctors.toList()
 
     fun searchDoctors(query: String): List<Doctor> {
-        val q = query.trim().lowercase()
+        val q = normalize(query)
         if (q.isEmpty()) return listDoctors()
-        return doctors.filter { it.name.lowercase().contains(q) || it.specialty.lowercase().contains(q) || it.city.lowercase().contains(q) }
+        return doctors.filter {
+            val name = normalize(it.name)
+            val spec = normalize(it.specialty)
+            val city = normalize(it.city)
+            name.contains(q) || spec.contains(q) || city.contains(q)
+        }
     }
+
+private fun normalize(input: String): String {
+    if (input.isEmpty()) return ""
+    val temp = Normalizer.normalize(input, Normalizer.Form.NFD)
+    return temp.replace("\\p{InCombiningDiacriticalMarks}+".toRegex(), "").lowercase().trim()
+}
 
     fun filterDoctors(specialty: String?, city: String?, telemedicine: Boolean?): List<Doctor> {
         return doctors.filter { d ->
-            val s = specialty?.trim()?.lowercase().orEmpty()
-            val c = city?.trim()?.lowercase().orEmpty()
-            val bySpec = s.isEmpty() || d.specialty.lowercase().contains(s)
-            val byCity = c.isEmpty() || d.city.lowercase().contains(c)
+            val s = normalize(specialty?.trim().orEmpty())
+            val c = normalize(city?.trim().orEmpty())
+            val bySpec = s.isEmpty() || normalize(d.specialty).contains(s)
+            val byCity = c.isEmpty() || normalize(d.city).contains(c)
             val byTele = telemedicine == null || d.telemedicine == telemedicine
             bySpec && byCity && byTele
         }

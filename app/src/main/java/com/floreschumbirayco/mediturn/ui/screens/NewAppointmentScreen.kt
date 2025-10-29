@@ -7,10 +7,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.clickable
 import androidx.compose.material3.Button
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -19,12 +23,18 @@ import androidx.compose.material3.TimePicker
 import androidx.compose.material3.TimePickerState
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.AlertDialog
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material3.Icon
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.window.PopupProperties
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.floreschumbirayco.mediturn.data.repository.AppointmentRepository
@@ -53,6 +63,15 @@ fun NewAppointmentScreen(navController: NavController, doctorId: String? = null,
     val timeError = remember { mutableStateOf(false) }
     val docRepo = remember { DoctorRepository() }
     val apptRepo = remember { AppointmentRepository() }
+    val allDoctors = remember { docRepo.listDoctors() }
+    val specialties = remember { allDoctors.map { it.specialty }.distinct().sorted() }
+    val doctorsBySpecialty = remember(specialty.value) {
+        allDoctors.filter { specialty.value.isBlank() || it.specialty.equals(specialty.value, ignoreCase = true) }
+    }
+    val specExpanded = remember { mutableStateOf(false) }
+    val doctorExpanded = remember { mutableStateOf(false) }
+    val specDialogOpen = remember { mutableStateOf(false) }
+    val doctorDialogOpen = remember { mutableStateOf(false) }
 
     LaunchedEffect(doctorId, slotId) {
         doctorId?.let {
@@ -83,14 +102,80 @@ fun NewAppointmentScreen(navController: NavController, doctorId: String? = null,
             if (nameError.value) Text("El nombre es obligatorio", style = MaterialTheme.typography.bodySmall)
         }, modifier = Modifier.fillMaxWidth())
         Spacer(Modifier.height(8.dp))
-        OutlinedTextField(specialty.value, { specialty.value = it }, placeholder = { Text("Especialidad") }, modifier = Modifier.fillMaxWidth())
+        val specInteraction = remember { MutableInteractionSource() }
+        Box(modifier = Modifier.fillMaxWidth()) {
+            OutlinedTextField(
+                value = specialty.value,
+                onValueChange = { },
+                placeholder = { Text("Especialidad") },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(
+                        interactionSource = specInteraction,
+                        indication = null
+                    ) { specDialogOpen.value = true },
+                readOnly = true
+                , trailingIcon = { Icon(Icons.Default.ArrowDropDown, contentDescription = null) }
+            )
+        }
+        if (specDialogOpen.value) {
+            AlertDialog(
+                onDismissRequest = { specDialogOpen.value = false },
+                confirmButton = { TextButton(onClick = { specDialogOpen.value = false }) { Text("Cerrar") } },
+                title = { Text("Selecciona especialidad") },
+                text = {
+                    Column {
+                        specialties.forEach { s ->
+                            androidx.compose.material3.TextButton(onClick = {
+                                specialty.value = s
+                                if (doctor.value.isNotBlank() && !doctorsBySpecialty.any { it.name == doctor.value }) {
+                                    doctor.value = ""
+                                }
+                                specDialogOpen.value = false
+                            }) { Text(s) }
+                        }
+                    }
+                }
+            )
+        }
         Spacer(Modifier.height(8.dp))
-        OutlinedTextField(doctor.value, {
-            doctor.value = it
-            doctorError.value = it.isBlank()
-        }, isError = doctorError.value, placeholder = { Text("Médico disponible*") }, supportingText = {
-            if (doctorError.value) Text("Selecciona o escribe un médico", style = MaterialTheme.typography.bodySmall)
-        }, modifier = Modifier.fillMaxWidth())
+        val doctorInteraction = remember { MutableInteractionSource() }
+        Box(modifier = Modifier.fillMaxWidth()) {
+            OutlinedTextField(
+                value = doctor.value,
+                onValueChange = { },
+                isError = doctorError.value,
+                placeholder = { Text("Médico disponible*") },
+                supportingText = { if (doctorError.value) Text("Selecciona un médico", style = MaterialTheme.typography.bodySmall) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(
+                        interactionSource = doctorInteraction,
+                        indication = null
+                    ) { doctorDialogOpen.value = true },
+                readOnly = true
+                , trailingIcon = { Icon(Icons.Default.ArrowDropDown, contentDescription = null) }
+            )
+        }
+        if (doctorDialogOpen.value) {
+            AlertDialog(
+                onDismissRequest = { doctorDialogOpen.value = false },
+                confirmButton = { TextButton(onClick = { doctorDialogOpen.value = false }) { Text("Cerrar") } },
+                title = { Text("Selecciona médico") },
+                text = {
+                    Column {
+                        doctorsBySpecialty.forEach { d ->
+                            androidx.compose.material3.TextButton(onClick = {
+                                doctor.value = d.name
+                                doctorError.value = false
+                                if (specialty.value.isBlank()) specialty.value = d.specialty
+                                doctorDialogOpen.value = false
+                            }) { Text(d.name) }
+                        }
+                    }
+                }
+            )
+        }
         Spacer(Modifier.height(8.dp))
         OutlinedTextField(date.value, { }, isError = dateError.value, placeholder = { Text("Fecha${if (slotId == null) "*" else ""}") }, supportingText = {
             if (dateError.value) Text("La fecha es obligatoria", style = MaterialTheme.typography.bodySmall)
@@ -118,7 +203,8 @@ fun NewAppointmentScreen(navController: NavController, doctorId: String? = null,
             }
             val valid = !nameError.value && !doctorError.value && !dateError.value && !timeError.value
             if (!valid) return@Button
-            val selectedDoctorId = doctorId ?: docRepo.searchDoctors(doctor.value).firstOrNull()?.id ?: "1"
+            val selectedDoctorId = doctorId ?: allDoctors.firstOrNull { it.name.equals(doctor.value, ignoreCase = true) }?.id
+                ?: docRepo.searchDoctors(doctor.value).firstOrNull()?.id ?: "1"
             apptRepo.bookAppointment(
                 patientId = "patient-1",
                 doctorId = selectedDoctorId,

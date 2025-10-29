@@ -42,10 +42,15 @@ fun DoctorsListScreen(navController: NavController) {
     var city by remember { mutableStateOf("") }
     var teleOnly by remember { mutableStateOf(false) }
     val doctors = remember(query, specialty, city, teleOnly) {
-        val spec = if (specialty.isNotBlank()) specialty else if (query.isNotBlank()) query else null
-        val c = if (city.isNotBlank()) city else null
-        val tele = if (teleOnly) true else null
-        if (spec == null && c == null && tele == null) repo.listDoctors() else repo.filterDoctors(spec, c, tele)
+        val base = if (query.isNotBlank()) repo.searchDoctors(query) else repo.listDoctors()
+        val s = specialty.trim().lowercase()
+        val c = city.trim().lowercase()
+        base.filter { d ->
+            val bySpec = s.isEmpty() || d.specialty.lowercase().contains(s)
+            val byCity = c.isEmpty() || d.city.lowercase().contains(c)
+            val byTele = !teleOnly || d.telemedicine
+            bySpec && byCity && byTele
+        }
     }
     Scaffold(
         topBar = {
