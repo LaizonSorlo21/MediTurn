@@ -1,20 +1,18 @@
-# MediTurn – Citas Médicas (Kotlin + Jetpack Compose)
+MediTurn – Citas Médicas (Kotlin + Jetpack Compose)
 
-Enlace Figma: https://www.figma.com/design/t7GNh0kH7693i8cWhxNjp1/Clinica?node-id=0-1&t=UV1w8Kc1qvN9r9IG-1
-
-## Descripción
+Descripción
 MediTurn es una app móvil que permite a pacientes buscar médicos por especialidad y ciudad, visualizar disponibilidad y reservar citas médicas (presencial o teleconsulta). Incluye flujo de inicio de sesión simulado, listado y detalle de médicos, agenda de citas y perfil básico del paciente.
 
-## Público objetivo y alcance
+Público objetivo y alcance
 - Pacientes que necesitan agendar consultas médicas de forma rápida y ordenada.
 - Alcance v1.0: datos locales simulados (sin backend), búsqueda/filtrado, reserva/reprogramación/cancelación de citas, navegación completa.
 
-## Roles del equipo
-- Líder técnico: [Nombre Apellido]
-- Diseñador(a) UI: [Nombre Apellido]
-- Tester/Documentación: [Nombre Apellido]
+Roles del equipo
+- Líder técnico: Kevin Flores
+- Diseñador(a) UI: Ximena Chumbirayco
+- Tester/Documentación: Kevin Flores
 
-## Arquitectura y navegación
+Arquitectura y navegación
 Arquitectura por capas simple:
 - ui: pantallas Compose y componentes.
 - navigation: rutas y NavHost.
@@ -33,26 +31,16 @@ MainActivity
       └── Home → Profile
 ```
 
-## Tecnologías
+Tecnologías
 - Kotlin, Jetpack Compose, Material 3, Navigation Compose.
 - Datos simulados en memoria (sin Room/Retrofit en v1.0).
 
-## Cómo ejecutar
-1. Abrir el proyecto en Android Studio Iguana+.
+Cómo ejecutar
+1. Abrir el proyecto en Android Studio
 2. Sincronizar Gradle y ejecutar en un emulador (API 24+). Target SDK: 36.
 3. Flujo recomendado: Splash → Login → Home → Doctors → Doctor Detail → New Appointment → Appointments.
 
-## Capturas (a subir en docs/screenshots/)
-- Home
-- Listado de Médicos
-- Detalle de Médico (con horarios)
-- Agendar Cita (validaciones y pickers)
-- Mis Citas (estado lleno y/o vacío)
-- Perfil
-
-Consulta la guía: docs/screenshots/README.md
-
-## Historias de usuario
+Historias de usuario
 🩺 HU01 – Buscar médicos por ciudad o tipo de atención  
 Como paciente, quiero buscar médicos por ciudad o tipo de atención (presencial o virtual) para encontrar un profesional que se adapte a mi necesidad.  
 Prioridad: Alta. Criterio de aceptación: El buscador muestra médicos que coinciden con los filtros seleccionados.
@@ -85,7 +73,7 @@ Prioridad: Media. Criterio de aceptación: La edición se guarda y se refleja en
 Como paciente, quiero ver consejos de bienestar y alertas de prevención para cuidar mi salud y mantener buenos hábitos.  
 Prioridad: Baja. Criterio de aceptación: En Home aparece un bloque con un consejo o alerta diaria.
 
-## Notas de la versión v1.0.0
+Notas de la versión v1.0.0
 - Navegación completa y estable (Splash, Login, Home, Doctors, Detail, New Appointment, Appointments, Profile).
 - Búsqueda y filtros (especialidad, ciudad, teleconsulta).
 - Reserva de citas, reprogramación y cancelación (datos simulados). 
@@ -93,15 +81,12 @@ Prioridad: Baja. Criterio de aceptación: En Home aparece un bloque con un conse
 
 Limitaciones: sin backend real, perfil estático, sin autenticación real, calendario mensual no implementado.
 
-## Roadmap (futuro)
+Roadmap (futuro)
 - Persistencia local (Room/SQLite) y/o backend (Ktor/Retrofit).
 - Autenticación real y perfil editable.
 - Calendario mensual y recordatorios (WorkManager/AlarmManager).
 - Modo offline y sincronización.
 
-## Enlaces
+Enlaces
 - Figma: https://www.figma.com/design/t7GNh0kH7693i8cWhxNjp1/Clinica?node-id=0-1&t=UV1w8Kc1qvN9r9IG-1
-- GitHub: [agregar URL del repositorio]
-
-## Créditos
-Docente: Juan León. Curso: Aplicaciones Móviles con Android. Equipo: [Nombres].
+- GitHub: https://github.com/LaizonSorlo21/MediTurn
